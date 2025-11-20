@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Distribucion.Core.Interfaces;
 using Distribucion.Infraestructura.Repositorio;
@@ -6,7 +6,6 @@ using Distribucion.Infraestructura.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Leer connection string desde Railway o fallback a appsettings.json
 var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
                        ?? builder.Configuration.GetConnectionString("DistribucionContext");
 
@@ -58,4 +57,5 @@ using (var scope = app.Services.CreateScope())
 app.UseCors("myApp");
 app.UseAuthorization();
 app.MapControllers();
+
 app.Run();
