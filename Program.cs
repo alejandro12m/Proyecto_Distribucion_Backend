@@ -6,24 +6,45 @@ using Distribucion.Infraestructura.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
-                       ?? builder.Configuration.GetConnectionString("DistribucionContext");
+// 🔥 Convierte DATABASE_URL de Railway a cadena válida Npgsql
+string ConvertToNpgsqlConnectionString(string databaseUrl)
+{
+    var uri = new Uri(databaseUrl);
+    var userInfo = uri.UserInfo.Split(':');
 
-// Configurar DbContext con Npgsql
+    return $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.Trim('/')};" +
+           $"Username={userInfo[0]};Password={userInfo[1]};" +
+           $"SSL Mode=Require;Trust Server Certificate=true";
+}
+
+// 🔥 Obtener la cadena de conexión desde Railway o appsettings.json
+var rawUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+string connectionString;
+
+if (!string.IsNullOrEmpty(rawUrl))
+{
+    connectionString = ConvertToNpgsqlConnectionString(rawUrl);
+}
+else
+{
+    connectionString = builder.Configuration.GetConnectionString("DistribucionContext");
+}
+
+// 🔥 Registrar DbContext con Npgsql
 builder.Services.AddDbContext<DistribucionContext>(options =>
     options.UseNpgsql(connectionString, npgsqlOptions =>
     {
-        npgsqlOptions.EnableRetryOnFailure(); // reintenta si falla la conexión
+        npgsqlOptions.EnableRetryOnFailure();
     }));
 
-// Configurar CORS
+// CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("myApp", policibuilder =>
+    options.AddPolicy("myApp", policyBuilder =>
     {
-        policibuilder.AllowAnyOrigin();
-        policibuilder.AllowAnyHeader();
-        policibuilder.AllowAnyMethod();
+        policyBuilder.AllowAnyOrigin()
+                     .AllowAnyHeader()
+                     .AllowAnyMethod();
     });
 });
 
@@ -33,19 +54,20 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpClient();
 
-// Inyectar repositorios
+// Repositorios
 builder.Services.AddScoped<IEnvioRepositorio, EnvioRepositorio>();
 builder.Services.AddScoped<IDetalleEnvioRepositorio, DetalleEnvioRepositorio>();
 
 var app = builder.Build();
 
-// Aplicar migraciones al iniciar
+// 🔥 Aplicar migraciones AUTOMÁTICAMENTE
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<DistribucionContext>();
     try
     {
-        db.Database.Migrate(); // Crea las tablas si no existen
+        db.Database.Migrate();
+        Console.WriteLine("Migraciones aplicadas correctamente.");
     }
     catch (Exception ex)
     {
@@ -57,5 +79,4 @@ using (var scope = app.Services.CreateScope())
 app.UseCors("myApp");
 app.UseAuthorization();
 app.MapControllers();
-
 app.Run();
