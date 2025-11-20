@@ -3,11 +3,21 @@ using Microsoft.Extensions.DependencyInjection;
 using Distribucion.Core.Interfaces;
 using Distribucion.Infraestructura.Repositorio;
 using Distribucion.Infraestructura.Data;
-var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddDbContext<DistribucionContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DistribucionContext") ?? throw new InvalidOperationException("Connection string 'DistribucionContext' not found.")));
 
-// Add services to the container.
+var builder = WebApplication.CreateBuilder(args);
+
+// Leer connection string desde Railway o fallback a appsettings.json
+var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
+                       ?? builder.Configuration.GetConnectionString("DistribucionContext");
+
+// Configurar DbContext con Npgsql
+builder.Services.AddDbContext<DistribucionContext>(options =>
+    options.UseNpgsql(connectionString, npgsqlOptions =>
+    {
+        npgsqlOptions.EnableRetryOnFailure(); // reintenta si falla la conexión
+    }));
+
+// Configurar CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("myApp", policibuilder =>
@@ -18,32 +28,34 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Controllers, Swagger y HttpClient
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpClient();
 
-
+// Inyectar repositorios
 builder.Services.AddScoped<IEnvioRepositorio, EnvioRepositorio>();
 builder.Services.AddScoped<IDetalleEnvioRepositorio, DetalleEnvioRepositorio>();
 
-
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+// Aplicar migraciones al iniciar
+using (var scope = app.Services.CreateScope())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    var db = scope.ServiceProvider.GetRequiredService<DistribucionContext>();
+    try
+    {
+        db.Database.Migrate(); // Crea las tablas si no existen
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("Error aplicando migraciones: " + ex.Message);
+    }
 }
 
-app.UseHttpsRedirection();
-
+// Middleware
 app.UseCors("myApp");
-
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();

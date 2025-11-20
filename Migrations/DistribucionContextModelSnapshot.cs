@@ -74,7 +74,7 @@ namespace Distribucion.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("FechaEnvio")
+                    b.Property<DateOnly>("FechaEnvio")
                         .HasColumnType("date");
 
                     b.Property<string>("Tipo")

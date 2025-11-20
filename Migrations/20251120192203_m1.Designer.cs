@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Distribucion.Migrations
 {
     [DbContext(typeof(DistribucionContext))]
-    [Migration("20251115180056_m5")]
-    partial class m5
+    [Migration("20251120192203_m1")]
+    partial class m1
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -77,7 +77,7 @@ namespace Distribucion.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("FechaEnvio")
+                    b.Property<DateOnly>("FechaEnvio")
                         .HasColumnType("date");
 
                     b.Property<string>("Tipo")
