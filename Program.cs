@@ -3,25 +3,59 @@ using Microsoft.Extensions.DependencyInjection;
 using Distribucion.Core.Interfaces;
 using Distribucion.Infraestructura.Repositorio;
 using Distribucion.Infraestructura.Data;
-//DistribucionContext
 
-var url = Environment.GetEnvironmentVariable("DATABASE_URL");
-var builder WebApplication.CreateBuilder(args);
-builder. Services. AddDbContext<DistribucionContext>(options =>
-options. UseNpgsql(url));
-// Add services to the container.
-builder. Services. AddControllers();
+var builder = WebApplication.CreateBuilder(args);
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder. Services.AddEndpointsApiExplorer();
-builder. Services.AddSwaggerGen();
-var app builder. Build();
-using (var scope app. Services.CreateScope())
-var db = scope. ServiceProvider. GetRequiredService<DistribucionContext>();
-db. Database. Migrate();
+// Leer connection string desde Railway o fallback a appsettings.json
+var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
+                       ?? builder.Configuration.GetConnectionString("DistribucionContext");
+
+// Configurar DbContext con Npgsql
+builder.Services.AddDbContext<DistribucionContext>(options =>
+    options.UseNpgsql(connectionString, npgsqlOptions =>
+    {
+        npgsqlOptions.EnableRetryOnFailure(); // reintenta si falla la conexión
+    }));
+
+// Configurar CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("myApp", policibuilder =>
+    {
+        policibuilder.AllowAnyOrigin();
+        policibuilder.AllowAnyHeader();
+        policibuilder.AllowAnyMethod();
+    });
+});
+
+// Controllers, Swagger y HttpClient
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+builder.Services.AddHttpClient();
+
+// Inyectar repositorios
+builder.Services.AddScoped<IEnvioRepositorio, EnvioRepositorio>();
+builder.Services.AddScoped<IDetalleEnvioRepositorio, DetalleEnvioRepositorio>();
+
+var app = builder.Build();
+
+// Aplicar migraciones al iniciar
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<DistribucionContext>();
+    try
+    {
+        db.Database.Migrate(); // Crea las tablas si no existen
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("Error aplicando migraciones: " + ex.Message);
+    }
 }
-app.UseSwagger();
-app. UseSwaggerUI();
-app. UseAuthorization();
-app. MapControllers();
+
+// Middleware
+app.UseCors("myApp");
+app.UseAuthorization();
+app.MapControllers();
 app.Run();
