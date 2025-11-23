@@ -9,14 +9,14 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
-# Copiar solo el csproj para aprovechar cache
-COPY ["Distribucion/Distribucion.csproj", "Distribucion/"]
-RUN dotnet restore "Distribucion/Distribucion.csproj"
+# Copiar solo el csproj para cache
+COPY ["Distribucion.csproj", "."]
+RUN dotnet restore "Distribucion.csproj"
 
-# Luego copiamos todo el código
+# Copiar todo
 COPY . .
 
-WORKDIR "/src/Distribucion"
+WORKDIR "/src"
 RUN dotnet build "Distribucion.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # Publish
