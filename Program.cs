@@ -31,6 +31,7 @@ builder.Services.AddHttpClient();
 // Repositorios
 builder.Services.AddScoped<IEnvioRepositorio, EnvioRepositorio>();
 builder.Services.AddScoped<IDetalleEnvioRepositorio, DetalleEnvioRepositorio>();
+builder.Services.AddScoped<ICamionRepositorio, CamionRepositorio>();
 
 var app = builder.Build();
 
@@ -50,7 +51,16 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine(ex.StackTrace);
     }
 }
+<<<<<<< HEAD
 
+=======
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+// Middleware
+>>>>>>> ba6f311 (Camion)
 app.UseCors("myApp");
 app.UseAuthorization();
 app.MapControllers();

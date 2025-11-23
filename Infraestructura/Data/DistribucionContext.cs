@@ -16,5 +16,6 @@ namespace Distribucion.Infraestructura.Data
 
         public DbSet<Envio> Envio { get; set; } = default!;
         public DbSet<Distribucion.Core.Entidades.DetalleEnvio> DetalleEnvio { get; set; } = default!;
+        public DbSet<Distribucion.Core.Entidades.Camion> Caminon { get; set; } = default!;
     }
 }
