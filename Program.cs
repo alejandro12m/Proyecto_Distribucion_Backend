@@ -51,16 +51,15 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine(ex.StackTrace);
     }
 }
-<<<<<<< HEAD
 
-=======
+// Swagger solo en desarrollo
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
 // Middleware
->>>>>>> ba6f311 (Camion)
 app.UseCors("myApp");
 app.UseAuthorization();
 app.MapControllers();
