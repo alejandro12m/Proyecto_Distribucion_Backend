@@ -6,10 +6,10 @@ using Distribucion.Infraestructura.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 🚀 Cadena de conexión interna de Railway (host interno)
-var connectionString = "Host=postgres.railway.internal;Port=5432;Database=railway;Username=postgres;Password=foqXkDDumQSNWvhKHRLOTFpfhxeGuGok;SSL Mode=Require;Trust Server Certificate=true";
+// Obtener cadena de conexión desde appsettings.json
+var connectionString = builder.Configuration.GetConnectionString("DistribucionContext");
 
-// Registrar DbContext con Npgsql
+// Registrar DbContext
 builder.Services.AddDbContext<DistribucionContext>(options =>
     options.UseNpgsql(connectionString));
 
@@ -52,11 +52,9 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// Swagger solo en desarrollo
-
+// Swagger
 app.UseSwagger();
 app.UseSwaggerUI();
-
 
 // Middleware
 app.UseCors("myApp");
