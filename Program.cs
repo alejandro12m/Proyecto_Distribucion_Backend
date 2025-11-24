@@ -10,7 +10,7 @@ var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 builder.WebHost.UseUrls($"http://*:{port}");
 
 // 🔥 Cadena de conexión correcta con puerto de Railway
-var connectionString = "Host=yamanote.proxy.rlwy.net;Port=18205;Database=railway;Username=postgres;Password=foqXkDDumQSNWvhKHRLOTFpfhxeGuGok;SSL Mode=Require;Trust Server Certificate=true";
+var connectionString = "Host=yamanote.proxy.rlwy.net;Port=5432;Database=railway;Username=postgres;Password=foqXkDDumQSNWvhKHRLOTFpfhxeGuGok;SSL Mode=Require;Trust Server Certificate=true";
 
 // Configurar DbContext con Npgsql
 builder.Services.AddDbContext<DistribucionContext>(options =>
