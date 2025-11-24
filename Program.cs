@@ -6,23 +6,24 @@ using Distribucion.Infraestructura.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-builder.WebHost.UseUrls($"http://*:{port}");
-
-// Leer cadena de conexión desde variable de entorno (más seguro)
 var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
-    ?? "Host=yamanote.proxy.rlwy.net;Port=5432;Database=Distribucion;Username=postgres;Password=foqXkDDumQSNWvhKHRLOTFpfhxeGuGok;SSL Mode=Require;Trust Server Certificate=true";
+                       ?? builder.Configuration.GetConnectionString("DistribucionContext");
 
-// Registrar DbContext con Npgsql
+// Configurar DbContext con Npgsql
 builder.Services.AddDbContext<DistribucionContext>(options =>
-    options.UseNpgsql(connectionString));
+    options.UseNpgsql(connectionString, npgsqlOptions =>
+    {
+        npgsqlOptions.EnableRetryOnFailure(); // reintenta si falla la conexión
+    }));
 
-// CORS
+// Configurar CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("myApp", policy =>
+    options.AddPolicy("myApp", policibuilder =>
     {
-        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+        policibuilder.AllowAnyOrigin();
+        policibuilder.AllowAnyHeader();
+        policibuilder.AllowAnyMethod();
     });
 });
 
@@ -32,36 +33,33 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpClient();
 
-// Repositorios
+// Inyectar repositorios
 builder.Services.AddScoped<IEnvioRepositorio, EnvioRepositorio>();
 builder.Services.AddScoped<IDetalleEnvioRepositorio, DetalleEnvioRepositorio>();
 builder.Services.AddScoped<ICamionRepositorio, CamionRepositorio>();
 
 var app = builder.Build();
 
-// Aplicar migraciones automáticamente
+// Aplicar migraciones al iniciar
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<DistribucionContext>();
     try
     {
-        Console.WriteLine("Aplicando migraciones...");
-        db.Database.Migrate();
-        Console.WriteLine("Migraciones aplicadas correctamente.");
+        db.Database.Migrate(); // Crea las tablas si no existen
     }
     catch (Exception ex)
     {
-        Console.WriteLine("ERROR aplicando migraciones: " + ex.Message);
-        Console.WriteLine(ex.StackTrace);
+        Console.WriteLine("Error aplicando migraciones: " + ex.Message);
     }
 }
-
-// Swagger habilitado siempre
-app.UseSwagger();
-app.UseSwaggerUI();
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
 
 // Middleware
 app.UseCors("myApp");
 app.UseAuthorization();
 app.MapControllers();
+
 app.Run();
