@@ -6,7 +6,7 @@ using Distribucion.Infraestructura.Data;
 var builder = WebApplication.CreateBuilder(args);
 
 // Puerto Railway
-var port = Environment.GetEnvironmentVariable("PORT") ?? "3000";
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 builder.WebHost.UseUrls($"http://*:{port}");
 
 // 🔥 Cadena de conexión correcta con puerto de Railway
